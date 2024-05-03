@@ -1,62 +1,58 @@
 #!/usr/bin/python3
-"""Implement Log parsing Algorithm"""
+"""Reads from standard input and computes metrics.
 
-import re
-import sys
-
-
-def print_stats(status_codes, total_size):
-    """Print All statistics"""
-    print(f'File size: {total_size}')
-    for key in sorted(status_codes.keys()):
-        if status_codes[key] == 0:
-            continue
-        print(f'{key}: {status_codes[key]}')
+After every ten lines or the input of a keyboard interruption (CTRL + C),
+prints the following statistics:
+    - Total file size up to that point.
+    - Count of read status codes up to that point.
+"""
 
 
-def main():
-    """Entry point of implementation"""
-    pattern = (r'^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) - '
-               r'\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6})\] "GET '
-               r'\/projects\/260 HTTP\/1.1" (\d{3}) (\d+)$')
-    line_count = 0
+def print_stats(size, status_codes):
+    """Print accumulated metrics.
 
-    status_codes = {
-        200: 0,
-        301: 0,
-        400: 0,
-        401: 0,
-        403: 0,
-        404: 0,
-        405: 0,
-        500: 0
-    }
-    total_size = 0
+    Args:
+        size (int): The accumulated read file size.
+        status_codes (dict): The accumulated count of status codes.
+    """
+    print("File size: {}".format(size))
+    for key in sorted(status_codes):
+        print("{}: {}".format(key, status_codes[key]))
+
+if __name__ == "__main__":
+    import sys
+
+    size = 0
+    status_codes = {}
+    valid_codes = ['200', '301', '400', '401', '403', '404', '405', '500']
+    count = 0
 
     try:
         for line in sys.stdin:
-            line_count += 1
-            line_match = re.match(pattern, line)
-            if not line_match:
-                continue
+            if count == 10:
+                print_stats(size, status_codes)
+                count = 1
+            else:
+                count += 1
 
-            status_code = int(line_match.group(3))
-            file_size = int(line_match.group(4))
+            line = line.split()
 
-            if status_code in status_codes.keys():
-                status_codes[status_code] += 1
+            try:
+                size += int(line[-1])
+            except (IndexError, ValueError):
+                pass
 
-            total_size += file_size
+            try:
+                if line[-2] in valid_codes:
+                    if status_codes.get(line[-2], -1) == -1:
+                        status_codes[line[-2]] = 1
+                    else:
+                        status_codes[line[-2]] += 1
+            except IndexError:
+                pass
 
-            if line_count % 10 == 0:
-                print_stats(status_codes, total_size)
-
-        print_stats(status_codes, total_size)
+        print_stats(size, status_codes)
 
     except KeyboardInterrupt:
-        print_stats(status_codes, total_size)
+        print_stats(size, status_codes)
         raise
-
-
-if __name__ == '__main__':
-    main()
