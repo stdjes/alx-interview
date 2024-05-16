@@ -1,59 +1,53 @@
 #!/usr/bin/python3
-"""N Queens"""
-import sys
+"""The N queens puzzle is the challenge of placing N non-attacking queens
+on an NxN chessboard. Write a program that solves the N queens problem.
+"""
+from sys import argv
 
-
-def print_board(board, n):
-    """Print allocated positions to the queen"""
-    b = []
-
-    for i in range(n):
-        for j in range(n):
-            if j == board[i]:
-                b.append([i, j])
-    print(b)
-
-
-def is_position_safe(board, i, j, r):
-    """Checks if the position is safe for the queen"""
-    return board[i] in (j, j - i + r, i - r + j)
-
-
-def safe_positions(board, row, n):
-    """Find all safe positions where the queen can be allocated"""
-    if row == n:
-        print_board(board, n)
-
+if __name__ == "__main__":
+    if len(argv) != 2:
+        print("Usage: nqueens N")
+        exit(1)
+    n = argv[1]
+    if n.isnumeric():
+        n = int(n)
     else:
-        for j in range(n):
-            allowed = True
-            for i in range(row):
-                if is_position_safe(board, i, j, row):
-                    allowed = False
-            if allowed:
-                board[row] = j
-                safe_positions(board, row + 1, n)
+        print("N must be a number")
+        exit(1)
+    if n < 4:
+        print("N must be at least 4")
+        exit(1)
 
+    cols = set()
+    posDia = set()  # (r + c)
+    negDia = set()  # (r - c)
 
-def create_board(size):
-    """Generates the board"""
-    return [0 * size for i in range(size)]
+    results = []
+    res = []
 
+    def backtrack(r):
+        """function"""
+        if r == n:
+            results.append(res.copy())
+            return
 
-if len(sys.argv) != 2:
-    print("Usage: nqueens N")
-    exit(1)
+        for c in range(n):
+            if c in cols or (c + r) in posDia or (r - c) in negDia:
+                continue
 
-try:
-    n = int(sys.argv[1])
-except BaseException:
-    print("N must be a number")
-    exit(1)
+            cols.add(c)
+            posDia.add(c + r)
+            negDia.add(r - c)
+            res.append([r, c])
 
-if (n < 4):
-    print("N must be at least 4")
-    exit(1)
+            backtrack(r + 1)
 
-board = create_board(int(n))
-row = 0
-safe_positions(board, row, int(n))
+            cols.remove(c)
+            posDia.remove(c + r)
+            negDia.remove(r - c)
+            res.remove([r, c])
+
+    backtrack(0)
+
+    for one in results:
+        print(one)
